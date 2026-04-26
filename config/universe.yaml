@@ -1,0 +1,34 @@
+# Default observation universe.
+# Tickers follow Yahoo Finance conventions. Funds use their Yahoo ticker (mutual fund or ETF).
+# Currency conversion to CHF is handled by the portfolio engine via FX pairs.
+base_currency: CHF
+
+stocks:
+  - NESN.SW   # Nestle (CHF)
+  - ROG.SW    # Roche (CHF)
+  - NOVN.SW   # Novartis (CHF)
+  - UBSG.SW   # UBS (CHF)
+  - ABBN.SW   # ABB (CHF)
+  - AAPL      # Apple (USD)
+  - MSFT      # Microsoft (USD)
+  - GOOGL     # Alphabet (USD)
+  - NVDA      # Nvidia (USD)
+  - SAP       # SAP (EUR/USD ADR)
+
+indices:
+  - ^SSMI     # Swiss Market Index
+  - ^GSPC     # S&P 500
+  - ^NDX      # Nasdaq 100
+  - ^STOXX50E # Euro Stoxx 50
+  - ^GDAXI    # DAX
+
+funds:
+  - VWRL.SW   # Vanguard FTSE All-World UCITS ETF (CHF)
+  - CHSPI.SW  # iShares Core SPI ETF (CHF)
+  - IWDA.AS   # iShares Core MSCI World UCITS ETF
+  - SXR8.DE   # iShares Core S&P 500 ETF
+
+fx_pairs:
+  USD: CHF=X         # USD/CHF
+  EUR: EURCHF=X      # EUR/CHF
+  GBP: GBPCHF=X      # GBP/CHF

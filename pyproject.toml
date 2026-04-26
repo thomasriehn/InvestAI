@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "investai"
+version = "0.1.0"
+description = "Autonomous market analysis & demo portfolio agent (stocks, indices, funds) with self-optimizing forecasts."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "InvestAI" }]
+license = { text = "MIT" }
+dependencies = [
+    "yfinance>=0.2.40",
+    "pandas>=2.1",
+    "numpy>=1.26",
+    "scikit-learn>=1.4",
+    "scipy>=1.11",
+    "rich>=13.7",
+    "typer>=0.12",
+    "pydantic>=2.6",
+    "python-dateutil>=2.9",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5"]
+
+[project.scripts]
+investai = "investai.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
