@@ -278,6 +278,21 @@ def optimize_run(metric: str = typer.Option("sharpe")):
 # =====================================================================
 # watch
 # =====================================================================
+@app.command("serve")
+def serve(
+    host: str = typer.Option("0.0.0.0", help="Bind interface"),
+    port: int = typer.Option(8080, help="HTTP port"),
+    synthetic: bool = typer.Option(False, "--synthetic/--no-synthetic"),
+    observer: bool = typer.Option(False, "--observer/--no-observer",
+                                  help="Run the orchestrator loop in a background thread"),
+    interval: int = typer.Option(900, help="Background observer interval seconds"),
+):
+    """Launch the web dashboard on the given port."""
+    from ..web.app import serve as web_serve
+    web_serve(host=host, port=port, allow_synthetic=synthetic,
+              background_observer=observer, observer_interval=interval)
+
+
 @app.command("watch")
 def watch(
     cycles: int = typer.Option(0, help="0 means run forever"),

@@ -60,8 +60,39 @@ investai portfolio reset --yes # Depot zuruecksetzen
 investai backtest run          # Walk-Forward-Backtest
 investai optimize run          # Hyperparameter neu optimieren + speichern
 investai watch --cycles 0 --interval 900   # Dauerbeobachtung
+investai serve --port 8080 --observer       # Web-Dashboard auf :8080
 investai info                  # Uebersicht
 ```
+
+## Web-Dashboard
+
+`investai serve --host 0.0.0.0 --port 8080` startet ein Flask/Waitress-
+Dashboard mit:
+
+- KPIs: Gesamtwert, PnL, Cash, Holdings, Universumsgroesse, letzter Zyklus
+- Live-Equity-Kurve (Chart.js)
+- Top-BUY / Top-SELL Forecasts
+- Positionsliste mit Gewichten und u-PnL
+- Letzte Trades inkl. Begruendung
+- Modell-Champions + Forecast-Hit-Rate
+- Buttons: "Zyklus jetzt", "Optimieren", "Observer ▶/⏸", "Reset"
+- Auto-Refresh alle 15 s; mit `--observer` laeuft im Hintergrund parallel
+  ein eigener Beobachterthread
+
+JSON-API (frei nutzbar fuer Skripte/eigene Frontends):
+
+| Endpoint | Beschreibung |
+| --- | --- |
+| `GET /api/summary` | Snapshot + Status |
+| `GET /api/history` | Equity-Kurve |
+| `GET /api/trades?limit=N` | Letzte Trades |
+| `GET /api/forecasts/latest` | Aktuellster Forecast pro Ticker |
+| `GET /api/models` | Champions + Performance-Historie |
+| `POST /api/cycle` | Sofortiger Beobachtungszyklus |
+| `POST /api/optimize` | Hyper-Parameter-Optimierung |
+| `POST /api/observer/start?interval=900` | Hintergrund-Loop ein |
+| `POST /api/observer/stop` | Hintergrund-Loop aus |
+| `POST /api/portfolio/reset?confirm=yes` | Depot zuruecksetzen |
 
 ## Multi-Agent-Setup (Claude Code)
 
