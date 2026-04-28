@@ -35,7 +35,10 @@ def test_summary_endpoint(client):
 
 
 def test_history_and_trades_endpoints_empty(client):
-    assert client.get("/api/history").get_json() == []
+    body = client.get("/api/history").get_json()
+    assert body["history"] == []
+    assert body["benchmark"] == []
+    assert "benchmark_ticker" in body
     assert client.get("/api/trades").get_json() == []
     assert client.get("/api/forecasts").get_json() == []
 

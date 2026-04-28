@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import pandas as pd
 from flask import Flask, jsonify, render_template, request
 
 from ..observer.orchestrator import Orchestrator
@@ -117,14 +118,39 @@ def create_app(*, db_path: Path | None = None,
     @app.get("/api/history")
     def api_history():
         rows = orch.store.portfolio_history()
-        return jsonify([{
+        history = [{
             "ts": r["ts"],
             "total_chf": r["total_value_chf"],
             "cash_chf": r["cash_chf"],
             "holdings_chf": r["holdings_value_chf"],
             "pnl_chf": r["pnl_chf"],
             "pnl_pct": r["pnl_pct"],
-        } for r in rows])
+        } for r in rows]
+
+        # Buy-and-hold benchmark on the requested ticker (default: first index).
+        bench_ticker = request.args.get("benchmark") or (
+            orch.universe.indices[0] if orch.universe.indices else None)
+        benchmark = []
+        if bench_ticker and history:
+            try:
+                bench_df = orch.market.history(bench_ticker, lookback_days=730,
+                                                refresh=False)
+                if not bench_df.empty:
+                    starting = float(history[0]["total_chf"])
+                    first_ts = pd.Timestamp(history[0]["ts"]).tz_localize(None)
+                    bench_df = bench_df[bench_df.index >= first_ts.normalize()]
+                    if not bench_df.empty:
+                        base_price = float(bench_df["close"].iloc[0])
+                        for idx, row in bench_df.iterrows():
+                            ratio = float(row["close"]) / base_price
+                            benchmark.append({
+                                "ts": idx.isoformat(),
+                                "total_chf": starting * ratio,
+                            })
+            except Exception as e:
+                log.debug("Benchmark fetch failed: %s", e)
+        return jsonify({"history": history, "benchmark": benchmark,
+                        "benchmark_ticker": bench_ticker})
 
     @app.get("/api/trades")
     def api_trades():

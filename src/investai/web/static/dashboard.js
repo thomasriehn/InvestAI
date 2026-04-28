@@ -69,22 +69,46 @@ async function loadSummary() {
 }
 
 async function loadHistory() {
-  const data = await getJSON("/api/history");
-  const labels = data.map(r => new Date(r.ts).toLocaleString("de-CH"));
-  const totals = data.map(r => r.total_chf);
+  const payload = await getJSON("/api/history");
+  const history = payload.history || [];
+  const benchmark = payload.benchmark || [];
+  const benchTicker = payload.benchmark_ticker || "Benchmark";
+
+  // Combine timeline so both series share an x-axis.
+  const tsSet = new Set();
+  for (const r of history) tsSet.add(r.ts);
+  for (const r of benchmark) tsSet.add(r.ts);
+  const timeline = [...tsSet].sort();
+  const histMap = Object.fromEntries(history.map(r => [r.ts, r.total_chf]));
+  const benchMap = Object.fromEntries(benchmark.map(r => [r.ts, r.total_chf]));
+  const labels = timeline.map(t => new Date(t).toLocaleString("de-CH"));
+  const totals = timeline.map(t => histMap[t] ?? null);
+  const bench = timeline.map(t => benchMap[t] ?? null);
+
   if (!equityChart) {
     const ctx = document.getElementById("chart-equity").getContext("2d");
     equityChart = new Chart(ctx, {
       type: "line",
       data: {
         labels: labels,
-        datasets: [{
-          label: "Gesamtwert CHF",
-          data: totals,
-          borderColor: "#4ea1ff",
-          backgroundColor: "rgba(78,161,255,0.12)",
-          borderWidth: 2, pointRadius: 0, fill: true, tension: 0.25,
-        }]
+        datasets: [
+          {
+            label: "Depot CHF",
+            data: totals,
+            borderColor: "#4ea1ff",
+            backgroundColor: "rgba(78,161,255,0.12)",
+            borderWidth: 2, pointRadius: 0, fill: true, tension: 0.25,
+            spanGaps: true,
+          },
+          {
+            label: "Benchmark (" + benchTicker + ")",
+            data: bench,
+            borderColor: "#f5b342",
+            backgroundColor: "rgba(245,179,66,0.0)",
+            borderWidth: 1.5, borderDash: [4, 4], pointRadius: 0,
+            tension: 0.25, fill: false, spanGaps: true,
+          },
+        ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -92,12 +116,16 @@ async function loadHistory() {
           x: { ticks: { color: "#8a93a6" }, grid: { color: "#1f2530" } },
           y: { ticks: { color: "#8a93a6" }, grid: { color: "#1f2530" } }
         },
-        plugins: { legend: { display: false } }
+        plugins: {
+          legend: { display: true, labels: { color: "#8a93a6" } }
+        }
       }
     });
   } else {
     equityChart.data.labels = labels;
     equityChart.data.datasets[0].data = totals;
+    equityChart.data.datasets[1].data = bench;
+    equityChart.data.datasets[1].label = "Benchmark (" + benchTicker + ")";
     equityChart.update("none");
   }
 }

@@ -51,14 +51,32 @@ def _row(date: pd.Timestamp, row: pd.Series) -> dict:
 
 
 def _synthetic_history(ticker: str, start: datetime, end: datetime) -> pd.DataFrame:
-    """Deterministic geometric-Brownian-motion fallback. Seeded by ticker."""
+    """Deterministic geometric-Brownian-motion fallback. Seeded by ticker.
+
+    Per-ticker drift is sampled from a near-zero distribution so the synthetic
+    universe does *not* trend uniformly upwards. FX-style tickers (those with
+    ``=X`` in the symbol) get an even tighter, mean-reverting profile.
+    """
     rng = random.Random(hash(ticker) & 0xFFFFFFFF)
     days = pd.bdate_range(start.date(), end.date())
     if len(days) == 0:
         return pd.DataFrame()
-    mu = 0.07 / 252
-    sigma = 0.20 / math.sqrt(252)
-    price = 50 + (hash(ticker) % 200)
+
+    is_fx = "=X" in ticker.upper()
+    if is_fx:
+        annual_mu = rng.gauss(0.0, 0.01)        # FX stays close to flat
+        annual_sigma = 0.05
+        start_price = 0.85 + rng.uniform(0, 0.4)
+    else:
+        # Mean ~0%/year, std-dev ~12% across tickers — produces a healthy mix
+        # of up-trenders, flat names and down-trenders, like a real universe.
+        annual_mu = rng.gauss(0.0, 0.12)
+        annual_sigma = 0.15 + rng.uniform(0, 0.20)
+        start_price = 30 + rng.uniform(0, 250)
+
+    mu = annual_mu / 252
+    sigma = annual_sigma / math.sqrt(252)
+    price = start_price
     closes = []
     for _ in days:
         shock = rng.gauss(0, 1)

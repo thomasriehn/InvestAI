@@ -87,6 +87,16 @@ footer {
   border-top: 1px solid var(--border);
 }
 
-#chart-equity { width: 100%; height: 320px; }
+.chart-wrap {
+  position: relative;
+  width: 100%;
+  height: 320px;
+}
+.chart-wrap canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
 .accuracy { font-size: 12px; line-height: 1.6; color: var(--muted); }
 .accuracy .big { font-size: 24px; color: var(--fg); font-weight: 600; }
