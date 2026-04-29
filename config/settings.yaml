@@ -1,0 +1,25 @@
+portfolio:
+  starting_cash_chf: 10000.0
+  max_position_pct: 0.20      # max 20% of portfolio in a single instrument
+  min_trade_chf: 100.0
+  cash_reserve_pct: 0.05      # always keep at least 5% in cash
+  trading_fee_pct: 0.001      # 0.1% per trade (Swiss broker realistic estimate)
+  trading_fee_min_chf: 1.0
+
+forecast:
+  horizon_days: 5             # forecast 5 trading days ahead
+  lookback_days: 504          # ~2 years of history for training
+  min_history_days: 120
+  buy_threshold: 0.015        # expected return >= +1.5% to buy
+  sell_threshold: -0.01       # expected return <= -1.0% to sell
+  confidence_floor: 0.55      # minimum directional probability
+
+observer:
+  poll_interval_seconds: 900  # 15 min during market hours
+  off_hours_interval_seconds: 3600
+  reoptimize_every_runs: 24   # re-run optimizer every N observation cycles
+
+optimizer:
+  search_iterations: 24
+  metric: "sharpe"            # sharpe | hit_rate | mae
+  walk_forward_folds: 4

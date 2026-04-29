@@ -1,0 +1,13 @@
+yfinance>=0.2.40
+pandas>=2.1
+numpy>=1.26
+scikit-learn>=1.4
+scipy>=1.11
+rich>=13.7
+typer>=0.12
+pydantic>=2.6
+python-dateutil>=2.9
+pyyaml>=6.0
+flask>=3.0
+waitress>=3.0
+pytest>=8

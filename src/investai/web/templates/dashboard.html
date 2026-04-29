@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InvestAI — Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>InvestAI <span class="muted">— Demo-Depot</span></h1>
+    <div class="actions">
+      <button id="btn-cycle">Zyklus jetzt</button>
+      <button id="btn-optimize">Optimieren</button>
+      <button id="btn-observer">Observer ▶</button>
+      <button id="btn-reset" class="danger">Reset</button>
+      <span id="status" class="status"></span>
+    </div>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi"><div class="label">Gesamtwert</div><div id="kpi-total" class="value">—</div><div class="sub" id="kpi-total-sub">CHF</div></div>
+    <div class="kpi"><div class="label">PnL</div><div id="kpi-pnl" class="value">—</div><div class="sub" id="kpi-pnl-sub">CHF</div></div>
+    <div class="kpi"><div class="label">Cash</div><div id="kpi-cash" class="value">—</div><div class="sub">CHF</div></div>
+    <div class="kpi"><div class="label">Holdings</div><div id="kpi-holdings" class="value">—</div><div class="sub">CHF</div></div>
+    <div class="kpi"><div class="label">Universum</div><div id="kpi-universe" class="value">—</div><div class="sub">Ticker</div></div>
+    <div class="kpi"><div class="label">Letzter Zyklus</div><div id="kpi-cycle" class="value">—</div><div class="sub" id="kpi-observer">Observer</div></div>
+  </section>
+
+  <section class="grid">
+    <article class="card span-2">
+      <h2>Equity-Kurve</h2>
+      <div class="chart-wrap">
+        <canvas id="chart-equity"></canvas>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2>Top BUY-Signale</h2>
+      <table id="tbl-buys"><thead><tr><th>Ticker</th><th>Erw. Return</th><th>Up-Prob</th><th>Ziel</th></tr></thead><tbody></tbody></table>
+    </article>
+
+    <article class="card">
+      <h2>Top SELL-Signale</h2>
+      <table id="tbl-sells"><thead><tr><th>Ticker</th><th>Erw. Return</th><th>Down-Prob</th><th>Ziel</th></tr></thead><tbody></tbody></table>
+    </article>
+
+    <article class="card span-2">
+      <h2>Positionen</h2>
+      <table id="tbl-positions"><thead><tr>
+        <th>Ticker</th><th>Anzahl</th><th>Wkr.</th><th>Preis</th>
+        <th>FX</th><th>Marktwert CHF</th><th>Gewicht</th><th>u-PnL %</th>
+      </tr></thead><tbody></tbody></table>
+    </article>
+
+    <article class="card span-2">
+      <h2>Letzte Trades</h2>
+      <table id="tbl-trades"><thead><tr>
+        <th>Zeit</th><th>Ticker</th><th>Side</th><th>Anzahl</th><th>CHF</th>
+        <th>Gebühr</th><th>Begründung</th>
+      </tr></thead><tbody></tbody></table>
+    </article>
+
+    <article class="card">
+      <h2>Modell-Champions</h2>
+      <table id="tbl-models"><thead><tr><th>Modell</th><th>Score</th><th>Metrik</th><th>Aktualisiert</th></tr></thead><tbody></tbody></table>
+    </article>
+
+    <article class="card">
+      <h2>Forecast-Genauigkeit</h2>
+      <div id="accuracy" class="accuracy">—</div>
+    </article>
+  </section>
+
+  <footer>
+    <span>Auto-refresh alle 15 s</span>
+    <span id="last-refresh"></span>
+  </footer>
+
+  <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>
