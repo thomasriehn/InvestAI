@@ -1,47 +1,65 @@
 "use strict";
 
-const fmtCHF = n => (n == null || !Number.isFinite(+n) ? "—"
-  : Number(n).toLocaleString("de-CH",
-    { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+// All formatters below are intentionally Intl-free. Safari/WebKit (esp. <16)
+// throws "The string did not match the expected pattern." for many
+// `Number.prototype.toLocaleString("de-CH", ...)` and
+// `Date.prototype.toLocaleString("de-CH")` calls; we therefore format
+// numbers and dates manually and never call into the Intl APIs.
+
+const pad2 = n => (n < 10 ? "0" : "") + n;
+
+function fmtThousands(intStr) {
+  // Swiss thousands separator: apostrophe.
+  return intStr.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+}
+
+const fmtCHF = n => {
+  if (n == null || !Number.isFinite(+n)) return "—";
+  const x = Number(n);
+  const neg = x < 0;
+  const [int, frac = "00"] = Math.abs(x).toFixed(2).split(".");
+  return (neg ? "-" : "") + fmtThousands(int) + "." + frac;
+};
+
 const fmtPct = n => (n == null || !Number.isFinite(+n) ? "—"
   : (n >= 0 ? "+" : "") + (n * 100).toFixed(2) + "%");
+
 const fmtNum = (n, d = 4) => (n == null || !Number.isFinite(+n) ? "—"
   : Number(n).toFixed(d));
+
 const cls = n => (n == null || !Number.isFinite(+n) ? ""
   : (n >= 0 ? "pos" : "neg"));
 
 // --- Safe date helpers ----------------------------------------------------
-// Safari / older WebKits throw "The string did not match the expected pattern"
-// when parsing certain ISO timestamps (e.g. with microseconds or a "+00:00"
-// offset). We normalise the string and fall back to the raw value if it still
-// can't be parsed instead of bubbling the error up.
 function parseDate(s) {
   if (s == null || s === "") return null;
   if (s instanceof Date) return Number.isNaN(s.getTime()) ? null : s;
   if (typeof s !== "string") return null;
   let str = s.trim();
-  // Replace space separator with T (e.g. SQLite default format)
   str = str.replace(" ", "T");
-  // Trim sub-second precision below ms (Safari refuses microseconds)
   str = str.replace(/(\.\d{3})\d+/, "$1");
   let d = new Date(str);
   if (!Number.isNaN(d.getTime())) return d;
-  // Strip timezone if present
   d = new Date(str.replace(/[+-]\d{2}:?\d{2}$/, "").replace(/Z$/, ""));
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
-const fmtDateTime = s => {
-  const d = parseDate(s);
-  return d ? d.toLocaleString("de-CH") : (s ?? "—");
-};
 const fmtDate = s => {
   const d = parseDate(s);
-  return d ? d.toLocaleDateString("de-CH") : (s ?? "—");
+  if (!d) return s ?? "—";
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 };
+
 const fmtTime = s => {
   const d = parseDate(s);
-  return d ? d.toLocaleTimeString("de-CH") : (s ?? "—");
+  if (!d) return s ?? "—";
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+};
+
+const fmtDateTime = s => {
+  const d = parseDate(s);
+  if (!d) return s ?? "—";
+  return fmtDate(d) + " " + fmtTime(d);
 };
 
 const $ = sel => document.querySelector(sel);
