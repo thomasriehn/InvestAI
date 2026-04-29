@@ -1,11 +1,48 @@
 "use strict";
 
-const fmtCHF = n => (n == null ? "—" : Number(n).toLocaleString("de-CH",
-  { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-const fmtPct = n => (n == null ? "—" : (n >= 0 ? "+" : "") +
-  (n * 100).toFixed(2) + "%");
-const fmtNum = (n, d = 4) => (n == null ? "—" : Number(n).toFixed(d));
-const cls = n => (n == null ? "" : (n >= 0 ? "pos" : "neg"));
+const fmtCHF = n => (n == null || !Number.isFinite(+n) ? "—"
+  : Number(n).toLocaleString("de-CH",
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+const fmtPct = n => (n == null || !Number.isFinite(+n) ? "—"
+  : (n >= 0 ? "+" : "") + (n * 100).toFixed(2) + "%");
+const fmtNum = (n, d = 4) => (n == null || !Number.isFinite(+n) ? "—"
+  : Number(n).toFixed(d));
+const cls = n => (n == null || !Number.isFinite(+n) ? ""
+  : (n >= 0 ? "pos" : "neg"));
+
+// --- Safe date helpers ----------------------------------------------------
+// Safari / older WebKits throw "The string did not match the expected pattern"
+// when parsing certain ISO timestamps (e.g. with microseconds or a "+00:00"
+// offset). We normalise the string and fall back to the raw value if it still
+// can't be parsed instead of bubbling the error up.
+function parseDate(s) {
+  if (s == null || s === "") return null;
+  if (s instanceof Date) return Number.isNaN(s.getTime()) ? null : s;
+  if (typeof s !== "string") return null;
+  let str = s.trim();
+  // Replace space separator with T (e.g. SQLite default format)
+  str = str.replace(" ", "T");
+  // Trim sub-second precision below ms (Safari refuses microseconds)
+  str = str.replace(/(\.\d{3})\d+/, "$1");
+  let d = new Date(str);
+  if (!Number.isNaN(d.getTime())) return d;
+  // Strip timezone if present
+  d = new Date(str.replace(/[+-]\d{2}:?\d{2}$/, "").replace(/Z$/, ""));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+const fmtDateTime = s => {
+  const d = parseDate(s);
+  return d ? d.toLocaleString("de-CH") : (s ?? "—");
+};
+const fmtDate = s => {
+  const d = parseDate(s);
+  return d ? d.toLocaleDateString("de-CH") : (s ?? "—");
+};
+const fmtTime = s => {
+  const d = parseDate(s);
+  return d ? d.toLocaleTimeString("de-CH") : (s ?? "—");
+};
 
 const $ = sel => document.querySelector(sel);
 
@@ -38,8 +75,7 @@ async function loadSummary() {
   $("#kpi-cash").textContent = fmtCHF(s.cash_chf);
   $("#kpi-holdings").textContent = fmtCHF(s.holdings_chf);
   $("#kpi-universe").textContent = s.universe_size;
-  $("#kpi-cycle").textContent = s.last_cycle_at
-    ? new Date(s.last_cycle_at).toLocaleString("de-CH") : "—";
+  $("#kpi-cycle").textContent = fmtDateTime(s.last_cycle_at);
   $("#kpi-observer").textContent = s.observer_running ? "Observer läuft" : "Observer aus";
 
   const btn = $("#btn-observer");
@@ -81,7 +117,7 @@ async function loadHistory() {
   const timeline = [...tsSet].sort();
   const histMap = Object.fromEntries(history.map(r => [r.ts, r.total_chf]));
   const benchMap = Object.fromEntries(benchmark.map(r => [r.ts, r.total_chf]));
-  const labels = timeline.map(t => new Date(t).toLocaleString("de-CH"));
+  const labels = timeline.map(t => fmtDateTime(t));
   const totals = timeline.map(t => histMap[t] ?? null);
   const bench = timeline.map(t => benchMap[t] ?? null);
 
@@ -179,7 +215,7 @@ async function loadTrades() {
     const tr = document.createElement("tr");
     const sideCls = r.side === "BUY" ? "pos" : "neg";
     tr.innerHTML = `
-      <td>${new Date(r.ts).toLocaleString("de-CH")}</td>
+      <td>${fmtDateTime(r.ts)}</td>
       <td>${r.ticker}</td>
       <td class="${sideCls}">${r.side}</td>
       <td class="num">${fmtNum(r.quantity)}</td>
@@ -202,22 +238,31 @@ async function loadModels() {
       <td>${r.model}</td>
       <td class="num">${Number(r.score).toFixed(3)}</td>
       <td>${r.metric}</td>
-      <td>${new Date(r.updated_at).toLocaleDateString("de-CH")}</td>`;
+      <td>${fmtDate(r.updated_at)}</td>`;
     tb.appendChild(tr);
   }
   if (m.champions.length === 0)
     tb.innerHTML = `<tr><td colspan="4" style="color:var(--muted)">Noch nicht optimiert.</td></tr>`;
 }
 
+async function safeRun(name, fn) {
+  try { await fn(); return null; }
+  catch (e) { console.error(name, e); return name + ": " + e.message; }
+}
+
 async function refreshAll() {
-  try {
-    await Promise.all([loadSummary(), loadHistory(), loadForecasts(),
-                       loadTrades(), loadModels()]);
-    $("#last-refresh").textContent = "letztes Update: " +
-      new Date().toLocaleTimeString("de-CH");
+  const errs = (await Promise.all([
+    safeRun("summary",   loadSummary),
+    safeRun("history",   loadHistory),
+    safeRun("forecasts", loadForecasts),
+    safeRun("trades",    loadTrades),
+    safeRun("models",    loadModels),
+  ])).filter(Boolean);
+  $("#last-refresh").textContent = "letztes Update: " + fmtTime(new Date());
+  if (errs.length === 0) {
     setStatus("ok", "ok");
-  } catch (e) {
-    setStatus("Fehler: " + e.message, "err");
+  } else {
+    setStatus("Fehler: " + errs.join(" | "), "err");
   }
 }
 
